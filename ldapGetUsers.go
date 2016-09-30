@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"endfirst.com/configReader"
+	"github.com/robarchibald/configReader"
 	"github.com/robarchibald/onedb"
 	"gopkg.in/ldap.v2"
 )
