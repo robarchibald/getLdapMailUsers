@@ -1,4 +1,10 @@
 language: go
-
 go:
-  - tip
+- tip
+deploy:
+  provider: releases
+  api_key:
+    secure: Nv2LnN3SL8hIUUEoiJyxzRlz+hKN9xhX66SIukx35STG77Isy+ock0dx1HbxEd1J3Yb/9WQndZCAGfTWRcW7wHfIHjtcYW/YQ+cPZ3EzJ8CpwDkD/mgjLLMGqAmJe+Evs7Gke7OCUoRDRjKpPW1mcuM3he3CLfcpqbAtEFS1Ko2EXgkmREPOS6UieOi8MSaDSoIfxKoKsApXwqSoC0wVEOC2bTcviw20AnN/ng2kT60Yly4IIgM9Doek6uvIBfWNgDfj3re7+BHKfdlHTZ5IkgT4q5uGke1YBZxJP7EEH48nNooFMz7VdtLjn45S9uFWQxRXfYDya3wzC3xvfpmGUEjADpNpsCLc9+AULb/FqPeHsu6VUSxyCsxIpcDeFIOVKmIUxo39UXUAdXgU/6KcbnFJxWDLemWRvqYxNdlLKOIhTKwTNsGbWlqG2vN69GaUxSI9hhgJ5pETHkoX2iiFtpFPxthFl1eFfiqDev3B/LGo7ebE7v4zQ9JNAzOtsKXcX+5Xx7ZxCMBjPFf5+zQWtkWWkIjzW4f60OrNUZwnIwQGCESFloRZVyiwj0/7BjDoDZBBGio4F62Y7v4avfbihbQeQ0rV2D5+UUXkTTwuYxuSoVA2jkPvp13T5kR7fCm+Myg4HUJkOYDzfMvwxH6iQSNCjJfW5MV2VAfqsg/Ze20=
+  file: getLdapMailUsers
+  on:
+    repo: robarchibald/getLdapMailUsers
