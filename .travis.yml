@@ -8,5 +8,5 @@ deploy:
   file: $TRAVIS_BUILD_DIR/getLdapMailUsers
   skip_cleanup: true  
   on:
-    tags: true
+    # tags: true
     repo: robarchibald/getLdapMailUsers
