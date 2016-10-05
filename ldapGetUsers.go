@@ -66,7 +66,7 @@ func (l *LdapGetUsers) updateUserData(db onedb.DBer) error {
 }
 
 func (l *LdapGetUsers) getUsers(db onedb.DBer) []UserData {
-	req := ldap.NewSearchRequest(l.LdapBaseDn, ldap.ScopeSingleLevel, ldap.NeverDerefAliases, 0, 0, false, l.LdapQueryFilter, []string{"uid", "userPassword", "uidNumber", "gidNumber", "homeDirectory"}, nil)
+	req := ldap.NewSearchRequest(l.LdapBaseDn, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false, l.LdapQueryFilter, []string{"uid", "userPassword", "uidNumber", "gidNumber", "homeDirectory"}, nil)
 	data := []ldapData{}
 	db.QueryStruct(req, &data)
 	users := []UserData{}
