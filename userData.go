@@ -21,6 +21,7 @@ type ldapData struct {
 	UIDNumber     []string
 	GIDNumber     []string
 	HomeDirectory []string
+	Quota         []string
 }
 
 func newUserData(data *ldapData) *UserData {
@@ -30,8 +31,8 @@ func newUserData(data *ldapData) *UserData {
 	gidNumber := strings.Join(data.GIDNumber, ",")
 	homeDirectory := strings.Join(data.HomeDirectory, ",")
 	extraFields := ""
-	if uid == "rob@robarchibald.com" || uid == "rob.archibald@endfirst.com" {
-		extraFields = "userdb_quota_rule=*:storage=10G"
+	if len(data.Quota) != 0 {
+		extraFields = "userdb_quota_rule=*:storage=" + data.Quota[0]
 	}
 	if len(uid) < 4 || len(password) < 4 || len(uidNumber) < 4 || len(gidNumber) < 4 || len(homeDirectory) < 4 {
 		return &UserData{Err: fmt.Errorf("Incomplete data for uid: %s\n.  Skipping", uid)}
