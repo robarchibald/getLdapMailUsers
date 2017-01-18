@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 type UserData struct {
@@ -25,19 +24,14 @@ type ldapData struct {
 }
 
 func newUserData(data *ldapData) *UserData {
-	uid := strings.Join(data.UID, ",")
-	password := strings.Join(data.UserPassword, ",")
-	uidNumber := strings.Join(data.UIDNumber, ",")
-	gidNumber := strings.Join(data.GIDNumber, ",")
-	homeDirectory := strings.Join(data.HomeDirectory, ",")
+	if len(data.UID) != 1 || len(data.UserPassword) != 1 || len(data.UIDNumber) != 1 || len(data.GIDNumber) != 1 || len(data.HomeDirectory) != 1 {
+		return &UserData{Err: fmt.Errorf("invalid ldap record: %v", data)}
+	}
 	extraFields := ""
 	if len(data.Quota) != 0 {
 		extraFields = "userdb_quota_rule=*:storage=" + data.Quota[0]
 	}
-	if len(uid) < 4 || len(password) < 4 || len(uidNumber) < 4 || len(gidNumber) < 4 || len(homeDirectory) < 4 {
-		return &UserData{Err: fmt.Errorf("Incomplete data for uid: %s\n.  Skipping", uid)}
-	}
-	return &UserData{uid, password, uidNumber, gidNumber, homeDirectory, extraFields, nil}
+	return &UserData{data.UID[0], data.UserPassword[0], data.UIDNumber[0], data.GIDNumber[0], data.HomeDirectory[0], extraFields, nil}
 }
 
 func (u *UserData) passwd() string {

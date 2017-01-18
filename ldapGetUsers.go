@@ -84,6 +84,9 @@ func writePasswdFile(userData []UserData, filename string) error {
 func getPasswd(userData []UserData) bytes.Buffer {
 	var buffer bytes.Buffer
 	for _, item := range userData {
+		if item.Err != nil {
+			continue
+		}
 		buffer.WriteString(item.passwd())
 	}
 	return buffer
@@ -125,6 +128,9 @@ func writeDomainsFile(userData []UserData, virtualDomainsFile string, postmapPat
 func getDomains(userData []UserData) bytes.Buffer {
 	domains := make(map[string]struct{})
 	for _, item := range userData {
+		if item.Err != nil {
+			continue
+		}
 		separator := strings.Index(item.Email, "@")
 		if separator != -1 {
 			domain := item.Email[separator+1 : len(item.Email)]
@@ -158,6 +164,9 @@ func writeRecipientsFile(userData []UserData, virtualRecipientsFile string, post
 func getRecipients(userData []UserData) bytes.Buffer {
 	var buffer bytes.Buffer
 	for _, item := range userData {
+		if item.Err != nil {
+			continue
+		}
 		buffer.WriteString(item.Email)
 		buffer.WriteString("\t")
 		buffer.WriteString(item.Email)
