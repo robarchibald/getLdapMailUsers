@@ -13,8 +13,8 @@ func TestUpdateUserData(t *testing.T) {
 	clean("testData/passwd_e2e*")
 	clean("testData/postfix*")
 
-	data := []ldapData{ldapData{UID: []string{"test@example.com"}, UserPassword: []string{"password"}, UIDNumber: []string{"1001"}, GIDNumber: []string{"10001"}, HomeDirectory: []string{"homeDirectory"}},
-		ldapData{UID: []string{"test2@example2.com"}, UserPassword: []string{"password2"}, UIDNumber: []string{"1002"}, GIDNumber: []string{"10002"}, HomeDirectory: []string{"homeDirectory2"}}}
+	data := []ldapData{ldapData{UID: []string{"test@example.com"}, UserPassword: []string{"password"}, UIDNumber: []string{"1001"}, GIDNumber: []string{"10001"}, MailFolder: []string{"MailFolder"}},
+		ldapData{UID: []string{"test2@example2.com"}, UserPassword: []string{"password2"}, UIDNumber: []string{"1002"}, GIDNumber: []string{"10002"}, MailFolder: []string{"MailFolder2"}}}
 	db := onedb.NewMock(nil, nil, data)
 
 	l := &LdapGetUsers{DovecotPasswdPath: "testData/passwd_e2e", PostfixVirtualMailboxDomainsPath: "testData/postfix_vmd", PostfixVirtualMailboxRecipientsPath: "testData/postfix_vmr"}
@@ -22,13 +22,13 @@ func TestUpdateUserData(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
-	data := []ldapData{ldapData{UID: []string{"test@example.com"}, UserPassword: []string{"password"}, UIDNumber: []string{"1001"}, GIDNumber: []string{"10001"}, HomeDirectory: []string{"homeDirectory"}},
-		ldapData{UID: []string{"test2@example2.com"}, UserPassword: []string{"password2"}, UIDNumber: []string{"1002"}, GIDNumber: []string{"10002"}, HomeDirectory: []string{"homeDirectory2"}}}
+	data := []ldapData{ldapData{UID: []string{"test@example.com"}, UserPassword: []string{"password"}, UIDNumber: []string{"1001"}, GIDNumber: []string{"10001"}, MailFolder: []string{"MailFolder"}},
+		ldapData{UID: []string{"test2@example2.com"}, UserPassword: []string{"password2"}, UIDNumber: []string{"1002"}, GIDNumber: []string{"10002"}, MailFolder: []string{"MailFolder2"}}}
 	db := onedb.NewMock(nil, nil, data)
 
 	l := &LdapGetUsers{}
-	if users := l.getUsers(db); len(users) != 2 || users[0].Email != "test@example.com" || users[0].Password != "password" || users[0].UID != "1001" || users[0].GID != "10001" || users[0].HomeDirectory != "homeDirectory" ||
-		users[1].Email != "test2@example2.com" || users[1].Password != "password2" || users[1].UID != "1002" || users[1].GID != "10002" || users[1].HomeDirectory != "homeDirectory2" {
+	if users := l.getUsers(db); len(users) != 2 || users[0].Email != "test@example.com" || users[0].Password != "password" || users[0].UID != "1001" || users[0].GID != "10001" || users[0].MailFolder != "MailFolder" ||
+		users[1].Email != "test2@example2.com" || users[1].Password != "password2" || users[1].UID != "1002" || users[1].GID != "10002" || users[1].MailFolder != "MailFolder2" {
 		t.Error("expected to get expected user", users)
 	}
 }
@@ -37,11 +37,11 @@ func TestWritePasswdFile(t *testing.T) {
 	clean("testData/passwd_basic*")
 
 	data := []UserData{UserData{Email: "test@example.com",
-		Password:      "password",
-		UID:           "Uid",
-		GID:           "Gid",
-		HomeDirectory: "homeDirectory",
-		ExtraFields:   "extraFields"}}
+		Password:    "password",
+		UID:         "Uid",
+		GID:         "Gid",
+		MailFolder:  "MailFolder",
+		ExtraFields: "extraFields"}}
 	writePasswdFile(data, "testData/passwd_basic")
 	file, _ := ioutil.ReadFile("testData/passwd_basic")
 	if string(file) != data[0].passwd() {
