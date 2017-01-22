@@ -24,14 +24,23 @@ type ldapData struct {
 }
 
 func newUserData(data *ldapData) *UserData {
-	if len(data.UID) != 1 || len(data.UserPassword) != 1 || len(data.UIDNumber) != 1 || len(data.GIDNumber) != 1 || len(data.MailFolder) != 1 {
+	if len(data.UID) != 1 || len(data.UserPassword) != 1 {
 		return &UserData{Err: fmt.Errorf("invalid ldap record: %v", data)}
 	}
-	extraFields := ""
+	var extraFields, uidNumber, gidNumber, mailFolder string
+	if len(data.GIDNumber) != 0 {
+		gidNumber = data.GIDNumber[0]
+	}
+	if len(data.UIDNumber) != 0 {
+		uidNumber = data.UIDNumber[0]
+	}
+	if len(data.MailFolder) != 0 {
+		mailFolder = data.MailFolder[0]
+	}
 	if len(data.MailQuota) != 0 {
 		extraFields = "userdb_quota_rule=*:storage=" + data.MailQuota[0]
 	}
-	return &UserData{data.UID[0], data.UserPassword[0], data.UIDNumber[0], data.GIDNumber[0], data.MailFolder[0], extraFields, nil}
+	return &UserData{data.UID[0], data.UserPassword[0], uidNumber, gidNumber, mailFolder, extraFields, nil}
 }
 
 func (u *UserData) passwd() string {
