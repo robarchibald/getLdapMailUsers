@@ -15,13 +15,12 @@ type UserData struct {
 }
 
 type ldapData struct {
-	UID           []string
-	UserPassword  []string
-	UIDNumber     []string
-	GIDNumber     []string
-	HomeDirectory []string
-	MailFolder    []string
-	MailQuota     []string
+	UID          []string
+	UserPassword []string
+	UIDNumber    []string
+	GIDNumber    []string
+	MailFolder   []string
+	MailQuota    []string
 }
 
 func newUserData(data *ldapData) *UserData {
@@ -34,9 +33,6 @@ func newUserData(data *ldapData) *UserData {
 	}
 	if len(data.UIDNumber) != 0 {
 		uidNumber = data.UIDNumber[0]
-	}
-	if len(data.HomeDirectory) != 0 {
-		mailFolder = data.HomeDirectory[0]
 	}
 	if len(data.MailFolder) != 0 {
 		mailFolder = data.MailFolder[0]
