@@ -3,20 +3,21 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/robarchibald/command"
+	"github.com/robarchibald/configReader"
+	"github.com/robarchibald/onedb"
+	"gopkg.in/ldap.v2"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/robarchibald/configReader"
-	"github.com/robarchibald/onedb"
-	"gopkg.in/ldap.v2"
 )
 
 type LdapGetUsers struct {
@@ -31,6 +32,9 @@ type LdapGetUsers struct {
 	PostfixVirtualMailboxDomainsPath    string
 	PostfixVirtualMailboxRecipientsPath string
 	PostmapPath                         string
+	DKIMSigningTable                    string
+	DKIMKeyTable                        string
+	DKIMKeysFolder                      string
 }
 
 func main() {
@@ -56,7 +60,11 @@ func (l *LdapGetUsers) updateUserData(db onedb.DBer) error {
 	if err := writePasswdFile(users, l.DovecotPasswdPath); err != nil {
 		return err
 	}
-	if err := writeDomainsFile(users, l.PostfixVirtualMailboxDomainsPath, l.PostmapPath); err != nil {
+	domains := getDomainsList(users)
+	if err := writeDomainsFile(domains, l.PostfixVirtualMailboxDomainsPath, l.PostmapPath); err != nil {
+		return err
+	}
+	if err := writeDkimTables(domains, l.DKIMKeyTable, l.DKIMSigningTable, l.DKIMKeysFolder); err != nil {
 		return err
 	}
 	if err := writeRecipientsFile(users, l.PostfixVirtualMailboxRecipientsPath, l.PostmapPath); err != nil {
@@ -113,19 +121,44 @@ func fileChanged(filename string, buffer bytes.Buffer) bool {
 }
 
 func rebuildHash(filename string, postmapPath string) error {
-	cmd := exec.Command(postmapPath, "hash:"+filename)
+	cmd := command.Command(postmapPath, "hash:"+filename)
 	return cmd.Run()
 }
 
-func writeDomainsFile(userData []UserData, virtualDomainsFile string, postmapPath string) error {
-	buffer := getDomains(userData)
+func writeDomainsFile(domains []string, virtualDomainsFile string, postmapPath string) error {
+	buffer := getDomainsFile(domains)
 	if changed, _ := writeIfChanged(buffer, virtualDomainsFile); changed {
 		return rebuildHash(virtualDomainsFile, postmapPath)
 	}
 	return nil
 }
 
-func getDomains(userData []UserData) bytes.Buffer {
+func restartOpenDKIM() error {
+	output, err := command.Command("/usr/sbin/service", "opendkim", "restart").CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, "Unable to restart opendkim server. "+string(output))
+	}
+	return nil
+}
+
+func writeDkimTables(domains []string, keyTableFile, signingTableFile, keysFolder string) error {
+	buffer := getKeyTable(domains, keysFolder)
+	ktChanged, err := writeIfChanged(buffer, keyTableFile)
+	if err != nil {
+		return err
+	}
+	buffer = getSigningTable(domains)
+	stChanged, err := writeIfChanged(buffer, signingTableFile)
+	if err != nil {
+		return err
+	}
+	if ktChanged || stChanged {
+		return restartOpenDKIM()
+	}
+	return nil
+}
+
+func getDomainsList(userData []UserData) []string {
 	domains := make(map[string]struct{})
 	for _, item := range userData {
 		if item.Err != nil {
@@ -145,10 +178,29 @@ func getDomains(userData []UserData) bytes.Buffer {
 		i++
 	}
 	sort.Strings(domainArr)
+	return domainArr
+}
 
+func getDomainsFile(domains []string) bytes.Buffer {
 	var buffer bytes.Buffer
-	for _, domain := range domainArr {
+	for _, domain := range domains {
 		buffer.WriteString(domain + "\t" + domain + "\n")
+	}
+	return buffer
+}
+
+func getKeyTable(domains []string, keysFolder string) bytes.Buffer {
+	var buffer bytes.Buffer
+	for _, domain := range domains {
+		buffer.WriteString(fmt.Sprintf("%s %s:mail:%s\n", domain, domain, path.Join(keysFolder, domain+".private")))
+	}
+	return buffer
+}
+
+func getSigningTable(domains []string) bytes.Buffer {
+	var buffer bytes.Buffer
+	for _, domain := range domains {
+		buffer.WriteString(fmt.Sprintf("*@%s %s\n", domain, domain))
 	}
 	return buffer
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"github.com/pkg/errors"
+	"github.com/robarchibald/command"
 	"github.com/robarchibald/onedb"
 	"io/ioutil"
 	"os"
@@ -36,7 +38,7 @@ func TestGetUsers(t *testing.T) {
 func TestWritePasswdFile(t *testing.T) {
 	clean("testData/passwd_basic*")
 
-	data := []UserData{UserData{Email: "test@example.com",
+	data := []UserData{UserData{Err: errors.New("error")}, UserData{Email: "test@example.com",
 		Password:    "password",
 		UID:         "Uid",
 		GID:         "Gid",
@@ -44,8 +46,8 @@ func TestWritePasswdFile(t *testing.T) {
 		ExtraFields: "extraFields"}}
 	writePasswdFile(data, "testData/passwd_basic")
 	file, _ := ioutil.ReadFile("testData/passwd_basic")
-	if string(file) != data[0].passwd() {
-		t.Error("expected file to match passwd", string(file), data[0].passwd())
+	if string(file) != data[1].passwd() {
+		t.Error("expected file to match passwd", string(file), data[1].passwd())
 	}
 }
 
@@ -63,33 +65,83 @@ func TestWriteIfChanged(t *testing.T) {
 }
 
 func TestWriteDomainsFile(t *testing.T) {
-	clean("testData/domains")
-	data := []UserData{UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
-	err := writeDomainsFile(data, "testData/domains", "postmap")
+	clean("testData/domains*")
+	domains := []string{"example.com", "example2.com"}
+	err := writeDomainsFile(domains, "testData/domains", "postmap")
 	if err == nil {
 		t.Error("expected error since postmap command doesn't exist")
 	}
 
-	err = writeDomainsFile(data, "testData/domains", "postmap")
+	err = writeDomainsFile(domains, "testData/domains", "postmap")
 	if err != nil {
 		t.Error("expected success since there was no change")
 	}
 }
 
-func TestGetDomains(t *testing.T) {
-	data := []UserData{UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
+func TestRestartOpenDkim(t *testing.T) {
+	command.SetMock(&command.MockShellCmd{CombinedOutputErr: errors.New("failed")})
+	if err := restartOpenDKIM(); err == nil {
+		t.Error("expected error")
+	}
+
+	command.SetMock(&command.MockShellCmd{})
+	if err := restartOpenDKIM(); err != nil {
+		t.Error("expected success", err)
+	}
+}
+
+func TestWriteDkimTables(t *testing.T) {
+	clean("testData/KeyTable*")
+	clean("testData/SigningTable*")
+	command.SetMock(&command.MockShellCmd{CombinedOutputErr: errors.New("failed")})
+	err := writeDkimTables([]string{"example.com", "example2.com"}, "testData/KeyTable", "testData/SigningTable", "/my/folder")
+	if err == nil {
+		t.Error("expected error restarting service")
+	}
+
+	err = writeDkimTables([]string{"example.com", "example2.com"}, "testData/KeyTable", "testData/SigningTable", "/my/folder")
+	if err != nil {
+		t.Error("expected success since there was no change", err)
+	}
+}
+
+func TestGetKeyTable(t *testing.T) {
+	buffer := getKeyTable([]string{"example.com", "example2.com"}, "/my/folder")
+	expected := "example.com example.com:mail:/my/folder/example.com.private\nexample2.com example2.com:mail:/my/folder/example2.com.private\n"
+	if buffer.String() != expected {
+		t.Error("expected matching KeyTable", buffer.String())
+	}
+}
+
+func TestGetSigningTable(t *testing.T) {
+	buffer := getSigningTable([]string{"example.com", "example2.com"})
+	expected := "*@example.com example.com\n*@example2.com example2.com\n"
+	if buffer.String() != expected {
+		t.Error("expected matching SigningTable", buffer.String())
+	}
+}
+
+func TestGetDomainsList(t *testing.T) {
+	data := []UserData{UserData{Err: errors.New("error")}, UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
+	if b := getDomainsList(data); len(b) != 2 || b[0] != "example.com" || b[1] != "example2.com" {
+		t.Error("expected example.com and example2.com", b)
+	}
+}
+
+func TestGetDomainsFile(t *testing.T) {
 	expected := "example.com\texample.com\nexample2.com\texample2.com\n"
-	if b := getDomains(data); b.String() != expected {
+	if b := getDomainsFile([]string{"example.com", "example2.com"}); b.String() != expected {
 		t.Error("expected example.com and example2.com")
 	}
 }
 
 func TestWriteRecipientsFile(t *testing.T) {
-	clean("testData/recipients")
+	clean("testData/recipients*")
+	command.SetMock(&command.MockShellCmd{RunErr: errors.New("failed")})
 	data := []UserData{UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
 	err := writeRecipientsFile(data, "testData/recipients", "postmap")
 	if err == nil {
-		t.Error("expected error since postmap command doesn't exist")
+		t.Error("expected error running postmap command")
 	}
 
 	err = writeRecipientsFile(data, "testData/recipients", "postmap")
@@ -99,7 +151,7 @@ func TestWriteRecipientsFile(t *testing.T) {
 }
 
 func TestGetRecipients(t *testing.T) {
-	data := []UserData{UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
+	data := []UserData{UserData{Err: errors.New("failed")}, UserData{Email: "test@example.com"}, UserData{Email: "test@example2.com"}}
 	expected := "test@example.com\ttest@example.com\ntest@example2.com\ttest@example2.com\n"
 	if b := getRecipients(data); b.String() != expected {
 		t.Error("expected valid recipients list")
