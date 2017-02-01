@@ -107,7 +107,7 @@ func writeIfChanged(buffer bytes.Buffer, filename string) (bool, error) {
 		}
 		fmt.Println("Updated: " + filename)
 		copyFileContents(filename, fmt.Sprintf("%s_%s", filename, time.Now().Format("20060102-150405")))
-		cleanup(filename+"_*", 48)
+		cleanup(filename+"_*", 336) // 2 weeks
 		return true, nil
 	}
 	return false, nil
@@ -158,6 +158,43 @@ func writeDkimTables(domains []string, keyTableFile, signingTableFile, keysFolde
 	return nil
 }
 
+func generateKeys(domains []string, keysFolder string) error {
+	for _, domain := range domains {
+		folder := path.Join(keysFolder, domain)
+		if err := createFolder(folder); err != nil {
+			return err
+		}
+		if err := generateKey(domain, folder); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createFolder(folder string) error {
+	if _, err := os.Stat(folder); err != nil && os.IsNotExist(err) {
+		if err := os.Mkdir(folder, 0700); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func generateKey(domain, folder string) error {
+	if _, err := os.Stat(path.Join(folder, "mail.private")); err != nil && os.IsNotExist(err) {
+		if err := command.Command("/usr/bin/opendkim-genkey", "-b 2048", "-r", "-s mail", "-D "+folder, "-d "+domain).Run(); err != nil {
+			return err
+		}
+		if err := command.Command("/bin/chmod", "600", path.Join(folder, "mail*")).Run(); err != nil {
+			return err
+		}
+		if err := command.Command("/bin/chown", "-R", "opendkim:opendkim", folder).Run(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getDomainsList(userData []UserData) []string {
 	domains := make(map[string]struct{})
 	for _, item := range userData {
@@ -192,7 +229,7 @@ func getDomainsFile(domains []string) bytes.Buffer {
 func getKeyTable(domains []string, keysFolder string) bytes.Buffer {
 	var buffer bytes.Buffer
 	for _, domain := range domains {
-		buffer.WriteString(fmt.Sprintf("%s %s:mail:%s\n", domain, domain, path.Join(keysFolder, domain+".private")))
+		buffer.WriteString(fmt.Sprintf("%s %s:mail:%s\n", domain, domain, path.Join(keysFolder, domain, "mail.private")))
 	}
 	return buffer
 }

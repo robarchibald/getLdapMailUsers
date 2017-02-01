@@ -107,7 +107,7 @@ func TestWriteDkimTables(t *testing.T) {
 
 func TestGetKeyTable(t *testing.T) {
 	buffer := getKeyTable([]string{"example.com", "example2.com"}, "/my/folder")
-	expected := "example.com example.com:mail:/my/folder/example.com.private\nexample2.com example2.com:mail:/my/folder/example2.com.private\n"
+	expected := "example.com example.com:mail:/my/folder/example.com/mail.private\nexample2.com example2.com:mail:/my/folder/example2.com/mail.private\n"
 	if buffer.String() != expected {
 		t.Error("expected matching KeyTable", buffer.String())
 	}
@@ -132,6 +132,41 @@ func TestGetDomainsFile(t *testing.T) {
 	expected := "example.com\texample.com\nexample2.com\texample2.com\n"
 	if b := getDomainsFile([]string{"example.com", "example2.com"}); b.String() != expected {
 		t.Error("expected example.com and example2.com")
+	}
+}
+
+func TestGenerateKeys(t *testing.T) {
+	command.SetMock(&command.MockShellCmd{})
+	if err := generateKeys([]string{"example.com", "example1.com"}, "testData"); err != nil {
+		t.Error("expected success")
+	}
+
+	command.SetMock(&command.MockShellCmd{RunErr: errors.New("fail")})
+	if err := generateKeys([]string{"example.com", "example1.com"}, "testData"); err == nil {
+		t.Error("expected error")
+	}
+}
+
+func TestCreateFolder(t *testing.T) {
+	clean("newFolder")
+	if err := createFolder("newFolder"); err != nil {
+		t.Error("expected success")
+	}
+
+	if err := createFolder("newFolder"); err != nil {
+		t.Error("expected success")
+	}
+}
+
+func TestGenerateKey(t *testing.T) {
+	command.SetMock(&command.MockShellCmd{RunErr: errors.New("failed")})
+	if err := generateKey("example.com", "."); err == nil {
+		t.Error("expected error")
+	}
+
+	command.SetMock(&command.MockShellCmd{})
+	if err := generateKey("example.com", "."); err != nil {
+		t.Error("expected success")
 	}
 }
 
