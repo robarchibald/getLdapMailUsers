@@ -244,7 +244,7 @@ func copyFileContents(src, dst string) error {
 		return err
 	}
 	defer in.Close()
-	out, err := os.Create(dst)
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0400)
 	if err != nil {
 		return err
 	}
