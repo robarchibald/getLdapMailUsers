@@ -1,4 +1,6 @@
 # Get LDAP Mail Users
+[![Build Status](https://travis-ci.org/EndFirstCorp/getLdapMailUsers.svg?branch=master)](https://travis-ci.org/EndFirstCorp/getLdapMailUsers) [![Coverage Status](https://coveralls.io/repos/github/EndFirstCorp/getLdapMailUsers/badge.svg?branch=master)](https://coveralls.io/github/EndFirstCorp/getLdapMailUsers?branch=master)
+
 A Dovecot and Postfix configuration writer to keep users synchronized between LDAP and Email servers
 
 ## Getting Started
