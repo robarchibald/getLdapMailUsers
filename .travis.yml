@@ -8,6 +8,13 @@ go:
 - tip
 script:
   - go build ./...
+  - go test -v -short -covermode=count -coverprofile=coverage.out
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+
+before_install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/mattn/goveralls
+
 deploy:
   provider: releases
   api_key:
@@ -17,11 +24,3 @@ deploy:
   on:
     # tags: true
     repo: EndFirstCorp/getLdapMailUsers
-
-before_install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/mattn/goveralls
-
-script:
-  - go test -v -short -covermode=count -coverprofile=coverage.out
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
